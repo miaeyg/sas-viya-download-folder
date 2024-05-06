@@ -26,7 +26,7 @@ func main() {
 	flag.StringVar(&limit, "l", "100", "Please enter a search string")
 	flag.Parse()
 
-	log.Println("Output folder:", output)
+	log.Println("Root output folder:", output)
 
 	// obtain the authorization code in browser: https://server/SASLogon/oauth/authorize?client_id=client&response_type=code
 	ai := core.AuthInfo{
@@ -59,10 +59,11 @@ func main() {
 	fl := sasobjs.GetFolders(ctx, queryfl)
 	for _, folder := range fl.Items {
 
-		log.Printf("\nFolder Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
+		log.Printf("Folder Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
 		err := os.Mkdir(output+"/"+folder.Name, 0750)
 		if err != nil {
 			fmt.Println("Error trying to create output dir", folder.Name)
+			continue
 		}
 
 		mem := sasobjs.GetMembers(ctx, folder.ID, querymem)
