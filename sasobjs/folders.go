@@ -82,6 +82,7 @@ type Link struct {
 // GetFolders extract a list of folders extra filters can be applied
 func GetFolders(ctx context.Context, query url.Values) FolderList {
 	// use type assertion "var.(T)" to pull the value out from the context (it is "interface{}" aka "any")
+	// https://go.dev/tour/methods/15
 	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
 	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
@@ -111,13 +112,13 @@ func GetMembers(ctx context.Context, folderid string, query url.Values) MemberLi
 }
 
 // GetFileContent downloads the file as a slice of bytes
-func GetFileContent(ctx context.Context, fileurl string, query url.Values) []byte {
+func GetFileContent(ctx context.Context, fileurl string) []byte {
 	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
 	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		"Authorization": []string{bearer}}
 	endpoint := fileurl + "/content"
 	method := "GET"
-	resp := core.CallRest(baseURL, endpoint, headers, method, nil, query)
+	resp := core.CallRest(baseURL, endpoint, headers, method, nil, nil)
 	return resp
 }

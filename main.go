@@ -58,7 +58,7 @@ func main() {
 		mem := sasobjs.GetMembers(ctx, folder.ID, querymem)
 		for _, member := range mem.Items {
 			fmt.Printf("Member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
-			sasfile := sasobjs.GetFileContent(ctx, member.URI, nil)
+			sasfile := sasobjs.GetFileContent(ctx, member.URI)
 			destination, err := os.Create(member.Name)
 			if err != nil {
 				fmt.Println("Error trying to create output file", member.Name)
