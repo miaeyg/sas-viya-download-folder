@@ -1,6 +1,7 @@
 package sasobjs
 
 import (
+	"context"
 	"dlfolder/core"
 	"encoding/json"
 	"net/url"
@@ -79,8 +80,10 @@ type Link struct {
 }
 
 // GetFolders extract a list of folders extra filters can be applied
-func GetFolders(baseURL string, token core.Token, query url.Values) FolderList {
-	bearer := "Bearer " + token.AccessToken
+func GetFolders(ctx context.Context, query url.Values) FolderList {
+	// bearer := "Bearer " + token.AccessToken
+	bearer := "Bearer " + ctx.Value("accessToken").(*core.Token).AccessToken
+	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		"Accept":        []string{"application/vnd.sas.collection+json"},
 		"Authorization": []string{bearer}}
@@ -93,8 +96,10 @@ func GetFolders(baseURL string, token core.Token, query url.Values) FolderList {
 }
 
 // GetFolders extract a list of folders extra filters can be applied
-func GetMembers(baseURL string, folderid string, token core.Token, query url.Values) MemberList {
-	bearer := "Bearer " + token.AccessToken
+func GetMembers(ctx context.Context, folderid string, query url.Values) MemberList {
+	// bearer := "Bearer " + token.AccessToken
+	bearer := "Bearer " + ctx.Value("accessToken").(*core.Token).AccessToken
+	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		"Accept":        []string{"application/vnd.sas.collection+json"},
 		"Authorization": []string{bearer}}
@@ -107,8 +112,10 @@ func GetMembers(baseURL string, folderid string, token core.Token, query url.Val
 }
 
 // GetFileContent downloads the file as a slice of bytes
-func GetFileContent(baseURL string, fileurl string, token core.Token, query url.Values) []byte {
-	bearer := "Bearer " + token.AccessToken
+func GetFileContent(ctx context.Context, fileurl string, query url.Values) []byte {
+	// bearer := "Bearer " + token.AccessToken
+	bearer := "Bearer " + ctx.Value("accessToken").(*core.Token).AccessToken
+	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		// "Accept":        []string{"application/vnd.sas.collection+json"},
 		"Authorization": []string{bearer}}
