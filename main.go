@@ -8,21 +8,25 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"os"
 )
 
 func main() {
-	var username, password, hostname, clientid, clientsecret, search, limit, code string
+	var username, password, hostname, clientid, clientsecret, search, limit, code, output string
 	flag.StringVar(&username, "u", "", "Please enter a user name")
 	flag.StringVar(&password, "p", "", "Please enter a password")
 	flag.StringVar(&code, "c", "", "Please enter an authorization code")
+	flag.StringVar(&output, "o", "c:/temp", "Please enter the output path")
 	flag.StringVar(&hostname, "h", "", "Please enter the hostname")
 	flag.StringVar(&clientid, "ci", "", "Please enter a ClientID")
 	flag.StringVar(&clientsecret, "cs", "", "Please enter a Client Secret")
 	flag.StringVar(&search, "s", "", "Please enter a search string")
 	flag.StringVar(&limit, "l", "100", "Please enter a search string")
 	flag.Parse()
+
+	log.Println("Output folder:", output)
 
 	// obtain the authorization code in browser: https://server/SASLogon/oauth/authorize?client_id=client&response_type=code
 	ai := core.AuthInfo{
@@ -54,17 +58,23 @@ func main() {
 
 	fl := sasobjs.GetFolders(ctx, queryfl)
 	for _, folder := range fl.Items {
-		fmt.Printf("\nFolder Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
+
+		log.Printf("\nFolder Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
+		err := os.Mkdir(output+"/"+folder.Name, 0750)
+		if err != nil {
+			fmt.Println("Error trying to create output dir", folder.Name)
+		}
+
 		mem := sasobjs.GetMembers(ctx, folder.ID, querymem)
 		for _, member := range mem.Items {
-			fmt.Printf("Member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
+			log.Printf("Member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
 			sasfile := sasobjs.GetFileContent(ctx, member.URI)
-			destination, err := os.Create(member.Name)
+			file, err := os.Create(output + "/" + folder.Name + "/" + member.Name)
 			if err != nil {
 				fmt.Println("Error trying to create output file", member.Name)
 			}
-			defer destination.Close()
-			io.Copy(destination, bytes.NewReader(sasfile))
+			defer file.Close()
+			io.Copy(file, bytes.NewReader(sasfile))
 		}
 	}
 }
