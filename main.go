@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"dlfolder/core"
 	"dlfolder/sasobjs"
 	"flag"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 )
 
 func main() {
@@ -38,26 +41,30 @@ func main() {
 	ctx = context.WithValue(ctx, "accessToken", &token)
 	ctx = context.WithValue(ctx, "baseURL", baseURL)
 
-	// folders query
+	// folders query see https://developer.sas.com/apis/rest/#making-an-api-call for details on query syntax
 	queryfl := url.Values{}
 	queryfl.Add("limit", limit)
 	if search != "" {
 		queryfl.Add("filter", "contains(name, "+search+")")
 	}
 
-	// members query
+	// members query - only files that contain ".sas"
 	querymem := url.Values{}
-	querymem.Add("filter", "contains(contentType, file)")
+	querymem.Add("filter", "and(eq(contentType, 'file'),contains(name, '.sas'))")
 
 	fl := sasobjs.GetFolders(ctx, queryfl)
 	for _, folder := range fl.Items {
-		fmt.Printf("Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
+		fmt.Printf("\nFolder Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
 		mem := sasobjs.GetMembers(ctx, folder.ID, querymem)
 		for _, member := range mem.Items {
 			fmt.Printf("Member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
-			fmt.Println(">>>")
-			fmt.Println(string(sasobjs.GetFileContent(ctx, member.URI, nil)))
-			fmt.Println(">>>")
+			sasfile := sasobjs.GetFileContent(ctx, member.URI, nil)
+			destination, err := os.Create(member.Name)
+			if err != nil {
+				fmt.Println("Error trying to create output file", member.Name)
+			}
+			defer destination.Close()
+			io.Copy(destination, bytes.NewReader(sasfile))
 		}
 	}
 }
