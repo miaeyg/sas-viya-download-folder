@@ -50,7 +50,7 @@ func main() {
 
 	// members query - only files that contain ".sas"
 	querymem := url.Values{}
-	querymem.Add("filter", "and(eq(contentType, 'file'),contains(name, '.sas'))")
+	querymem.Add("filter", "and(eq(contentType, 'file'),endsWith(name, '.sas'))")
 
 	fl := sasobjs.GetFolders(ctx, queryfl)
 	for _, folder := range fl.Items {
