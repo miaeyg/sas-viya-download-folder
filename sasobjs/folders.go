@@ -3,7 +3,6 @@ package sasobjs
 import (
 	"dlfolder/core"
 	"encoding/json"
-	"log"
 	"net/url"
 )
 
@@ -61,6 +60,7 @@ type Member struct {
 	ModifiedBy        string `json:"modifiedBy"`
 	Type              string `json:"type"`
 	ContentType       string `json:"contentType"`
+	URI               string `json:"uri"`
 	Links             []Link `json:"links"`
 	Version           int    `json:"version"`
 }
@@ -99,12 +99,21 @@ func GetMembers(baseURL string, folderid string, token core.Token, query url.Val
 		"Accept":        []string{"application/vnd.sas.collection+json"},
 		"Authorization": []string{bearer}}
 	endpoint := "/folders/folders/" + folderid + "/members"
-	log.Println(endpoint)
 	method := "GET"
 	resp := core.CallRest(baseURL, endpoint, headers, method, nil, query)
 	var result MemberList
-	if err := json.Unmarshal(resp, &result); err != nil {
-		log.Println(err)
-	}
+	json.Unmarshal(resp, &result)
 	return result
+}
+
+// GetFileContent downloads the file as a slice of bytes
+func GetFileContent(baseURL string, fileurl string, token core.Token, query url.Values) []byte {
+	bearer := "Bearer " + token.AccessToken
+	headers := map[string][]string{
+		// "Accept":        []string{"application/vnd.sas.collection+json"},
+		"Authorization": []string{bearer}}
+	endpoint := fileurl + "/content"
+	method := "GET"
+	resp := core.CallRest(baseURL, endpoint, headers, method, nil, query)
+	return resp
 }

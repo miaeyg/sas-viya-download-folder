@@ -44,7 +44,10 @@ func main() {
 		fmt.Printf("Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
 		mem := sasobjs.GetMembers(baseURL, folder.ID, token, querymem)
 		for _, member := range mem.Items {
-			fmt.Println("Member:", member.Name)
+			fmt.Printf("Member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
+			fmt.Println(">>>")
+			fmt.Println(string(sasobjs.GetFileContent(baseURL, member.URI, token, nil)))
+			fmt.Println(">>>")
 		}
 	}
 }
