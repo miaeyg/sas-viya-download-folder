@@ -38,7 +38,7 @@ func main() {
 
 	// store token and baseURL in a context
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "accessToken", &token)
+	ctx = context.WithValue(ctx, "token", &token)
 	ctx = context.WithValue(ctx, "baseURL", baseURL)
 
 	// folders query see https://developer.sas.com/apis/rest/#making-an-api-call for details on query syntax

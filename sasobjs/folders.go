@@ -82,7 +82,7 @@ type Link struct {
 // GetFolders extract a list of folders extra filters can be applied
 func GetFolders(ctx context.Context, query url.Values) FolderList {
 	// use type assertion "var.(T)" to pull the value out from the context (it is "interface{}" aka "any")
-	bearer := "Bearer " + ctx.Value("accessToken").(*core.Token).AccessToken
+	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
 	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		"Accept":        []string{"application/vnd.sas.collection+json"},
@@ -97,7 +97,7 @@ func GetFolders(ctx context.Context, query url.Values) FolderList {
 
 // GetFolders extract a list of folders extra filters can be applied
 func GetMembers(ctx context.Context, folderid string, query url.Values) MemberList {
-	bearer := "Bearer " + ctx.Value("accessToken").(*core.Token).AccessToken
+	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
 	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		"Accept":        []string{"application/vnd.sas.collection+json"},
@@ -112,7 +112,7 @@ func GetMembers(ctx context.Context, folderid string, query url.Values) MemberLi
 
 // GetFileContent downloads the file as a slice of bytes
 func GetFileContent(ctx context.Context, fileurl string, query url.Values) []byte {
-	bearer := "Bearer " + ctx.Value("accessToken").(*core.Token).AccessToken
+	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
 	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
 		"Authorization": []string{bearer}}
