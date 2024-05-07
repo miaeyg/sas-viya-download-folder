@@ -11,24 +11,32 @@ import (
 	"log"
 	"net/url"
 	"os"
+
+	"github.com/pkg/browser"
 )
 
 func main() {
-	var username, password, hostname, clientid, clientsecret, search, limit, code, output string
-	flag.StringVar(&username, "u", "", "Please enter a user name")
-	flag.StringVar(&password, "p", "", "Please enter a password")
-	flag.StringVar(&code, "c", "", "Please enter an authorization code")
+	var hostname, clientid, clientsecret, search, limit, code, output string
 	flag.StringVar(&output, "o", "c:/temp", "Please enter the output path")
 	flag.StringVar(&hostname, "h", "", "Please enter the hostname")
 	flag.StringVar(&clientid, "ci", "", "Please enter a ClientID")
-	flag.StringVar(&clientsecret, "cs", "", "Please enter a Client Secret")
 	flag.StringVar(&search, "s", "", "Please enter a search string")
-	flag.StringVar(&limit, "l", "100", "Please enter a search string")
+	flag.StringVar(&limit, "l", "100", "Please enter a limit on the returned number of results")
 	flag.Parse()
 
-	log.Println("Root output folder:", output)
+	// open browser to get authorization code
+	browser.OpenURL(hostname + "/SASLogon/oauth/authorize?client_id=" + clientid + "&response_type=code")
 
-	// obtain the authorization code in browser: https://server/SASLogon/oauth/authorize?client_id=client&response_type=code
+	// get authorization code
+	fmt.Println("Enter code from browser:")
+	fmt.Scan(&code)
+
+	// get client secret
+	fmt.Println("Enter client secret:")
+	fmt.Println("\033[8m") // Hide input
+	fmt.Scan(&clientsecret)
+	fmt.Println("\033[28m") // Show input
+
 	ai := core.AuthInfo{
 		// Username:     username,
 		// Password:     password,
@@ -56,26 +64,32 @@ func main() {
 	querymem := url.Values{}
 	querymem.Add("filter", "and(eq(contentType, 'file'),endsWith(name, '.sas'))")
 
-	fl := sasobjs.GetFolders(ctx, queryfl)
-	for _, folder := range fl.Items {
+	log.Println("Root output folder:", output)
+	log.Println("Searching for folders in SAS Content...")
 
-		log.Printf("Folder Id: %v Name: %v Members: %v\n", folder.ID, folder.Name, folder.MemberCount)
+	// get list of folders and loop over them
+	folders := sasobjs.GetFolders(ctx, queryfl)
+	for _, folder := range folders.Items {
+
+		log.Printf("Folder Name: %v Id: %v Members: %v\n", folder.Name, folder.ID, folder.MemberCount)
 		err := os.Mkdir(output+"/"+folder.Name, 0750)
 		if err != nil {
 			fmt.Println("Error trying to create output dir", folder.Name)
 			continue
 		}
 
-		mem := sasobjs.GetMembers(ctx, folder.ID, querymem)
-		for _, member := range mem.Items {
-			log.Printf("Member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
+		// get folder members that follow the member filter
+		members := sasobjs.GetMembers(ctx, folder.ID, querymem)
+		for _, member := range members.Items {
+			log.Printf("Downloading member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
 			sasfile := sasobjs.GetFileContent(ctx, member.URI)
 			file, err := os.Create(output + "/" + folder.Name + "/" + member.Name)
 			if err != nil {
 				fmt.Println("Error trying to create output file", member.Name)
+				continue
 			}
-			defer file.Close()
 			io.Copy(file, bytes.NewReader(sasfile))
+			file.Close()
 		}
 	}
 }

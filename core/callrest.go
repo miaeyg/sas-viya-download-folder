@@ -31,6 +31,5 @@ func CallRest(baseURL string, endpoint string, headers map[string][]string, meth
 	if err != nil {
 		log.Println(err)
 	}
-	// log.Println("Body: ", string(body))
 	return []byte(body)
 }

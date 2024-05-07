@@ -28,7 +28,7 @@ func (ai AuthInfo) GetToken(baseURL string) Token {
 	headers := map[string][]string{
 		"Content-Type": []string{"application/x-www-form-urlencoded"},
 		"Accept":       []string{"application/json"}}
-	endpoint := "/SASLogon/oauth/token#password"
+	endpoint := "/SASLogon/oauth/token"
 	method := "POST"
 	data := url.Values{}
 	// data.Set("username", ai.Username)
