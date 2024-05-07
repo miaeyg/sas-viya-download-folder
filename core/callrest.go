@@ -22,6 +22,7 @@ func CallRest(baseURL string, endpoint string, headers map[string][]string, meth
 	req.Header = headers
 	req.URL.RawQuery = query.Encode()
 	client := &http.Client{Transport: tr}
+	// fmt.Println(req.URL.String())
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
@@ -31,5 +32,6 @@ func CallRest(baseURL string, endpoint string, headers map[string][]string, meth
 	if err != nil {
 		log.Println(err)
 	}
+	// fmt.Println(string(body))
 	return []byte(body)
 }

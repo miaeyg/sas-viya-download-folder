@@ -4,6 +4,7 @@ import (
 	"context"
 	"dlfolder/core"
 	"encoding/json"
+	"fmt"
 	"net/url"
 )
 
@@ -30,10 +31,8 @@ type Folder struct {
 	CreatedBy         string `json:"createdBy"`
 	ModifiedBy        string `json:"modifiedBy"`
 	Type              string `json:"type"`
-	IconURI           string `json:"iconUri"`
 	MemberCount       int    `json:"memberCount"`
 	Links             []Link `json:"links"`
-	Properties        string `json:"properties"`
 	Version           int    `json:"version"`
 }
 
@@ -80,19 +79,23 @@ type Link struct {
 }
 
 // GetFolders extract a list of folders extra filters can be applied
-func GetFolders(ctx context.Context, query url.Values) FolderList {
+func GetFolder(ctx context.Context, query url.Values) Folder {
 	// use type assertion "var.(T)" to pull the value out from the context (it is "interface{}" aka "any")
 	// https://go.dev/tour/methods/15
 	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
 	baseURL := ctx.Value("baseURL").(string)
 	headers := map[string][]string{
-		"Accept":        []string{"application/vnd.sas.collection+json"},
+		// "Accept":        []string{"application/vnd.sas.collection+json"},
+		"Accept":        []string{"application/vnd.sas.content.folder+json", "application/json", "application/vnd.sas.content.folder.member+json"},
 		"Authorization": []string{bearer}}
-	endpoint := "/folders/folders"
+	endpoint := "/folders/folders/@item"
 	method := "GET"
 	resp := core.CallRest(baseURL, endpoint, headers, method, nil, query)
-	var result FolderList
-	json.Unmarshal(resp, &result)
+	var result Folder
+	err := json.Unmarshal(resp, &result)
+	if err != nil {
+		fmt.Println("Error in marshaling!", err)
+	}
 	return result
 }
 
@@ -107,7 +110,10 @@ func GetMembers(ctx context.Context, folderid string, query url.Values) MemberLi
 	method := "GET"
 	resp := core.CallRest(baseURL, endpoint, headers, method, nil, query)
 	var result MemberList
-	json.Unmarshal(resp, &result)
+	err := json.Unmarshal(resp, &result)
+	if err != nil {
+		fmt.Println("Error in marshaling!", err)
+	}
 	return result
 }
 
