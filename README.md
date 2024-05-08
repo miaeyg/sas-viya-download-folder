@@ -1,6 +1,5 @@
 # sas-viya-download-folder
-This project downloads a SAS Content folder to disk
-Can be useful for downloading SAS Content folders to local disk for git sync
+This project downloads a SAS Content folder to disk. Can be useful for git sync.
 
 Code accepts as input a base folder and then downloads all .sas files (can be modified) in base folder and all subfolders recursively
 
