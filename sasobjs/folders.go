@@ -110,7 +110,6 @@ func GetFolder(ctx context.Context, folderID string) Folder {
 		"Accept":        []string{"application/vnd.sas.content.folder+json", "application/json", "application/vnd.sas.content.folder.member+json"},
 		"Authorization": []string{bearer}}
 	endpoint := "/folders/folders/" + folderID
-	fmt.Println(endpoint)
 	method := "GET"
 	resp := core.CallRest(baseURL, endpoint, headers, method, nil, nil)
 	var result Folder

@@ -16,6 +16,14 @@ import (
 	"github.com/pkg/browser"
 )
 
+// Folder child member query
+var memberQuery url.Values = url.Values{}
+
+// Sample query that selects only files who's names end with .sas - modify as needed
+func init() {
+	memberQuery.Add("filter", "or(and(eq(contentType, 'file'),endsWith(name, '.sas')),eq(contentType, 'folder'))")
+}
+
 func main() {
 	var hostname, clientid, clientsecret, path, code, rootOutputPath string
 	flag.StringVar(&rootOutputPath, "o", "c:/temp", "Please enter the output path")
@@ -25,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	if path == "" {
-		log.Panicln("-path is a required parameter. Aborting.")
+		log.Fatalln("-path is a required parameter. Aborting.")
 	}
 
 	// Open browser to get authorization code
@@ -61,24 +69,18 @@ func main() {
 	// Folders query see https://developer.sas.com/apis/rest/#making-an-api-call for details on query syntax
 	// Search for the specific folder as passed in the input flag
 	folderQuery := url.Values{}
-	folderQuery.Add("limit", "1")
 	folderQuery.Add("path", path)
-
-	// Members query
-	// Create a query that selects only files who's names end with .sas
-	memberQuery := url.Values{}
-	memberQuery.Add("filter", "or(and(eq(contentType, 'file'),endsWith(name, '.sas')),eq(contentType, 'folder'))")
 
 	log.Printf("Downloading to root folder: %s\n", rootOutputPath)
 	log.Println("Searching for folders in SAS Content...")
 
 	// get root folder ID and call download function
 	folderID := sasobjs.GetFolderID(ctx, folderQuery)
-	downloadFolder(ctx, rootOutputPath, folderID, memberQuery)
+	downloadFolder(ctx, rootOutputPath, folderID)
 }
 
 // Handle download of a folder and its child folders/members
-func downloadFolder(ctx context.Context, basePath string, folderID string, memberQuery url.Values) {
+func downloadFolder(ctx context.Context, basePath string, folderID string) {
 
 	// get folder details and establish base folder to point to this folder on disk
 	folder := sasobjs.GetFolder(ctx, folderID)
@@ -109,8 +111,8 @@ func downloadFolder(ctx context.Context, basePath string, folderID string, membe
 			io.Copy(file, bytes.NewReader(memberContent))
 			file.Close()
 		case "folder":
-			log.Printf("--> Found subfolder %s with id %s", member.Name, member.ID)
-			downloadFolder(ctx, currentBasePath, strings.Split(member.URI, "/")[3], memberQuery)
+			log.Printf("--> Found subfolder %s", member.Name)
+			downloadFolder(ctx, currentBasePath, strings.Split(member.URI, "/")[3])
 		default:
 			log.Println("In type other")
 		}
