@@ -77,14 +77,15 @@ func main() {
 	downloadFolder(ctx, rootOutputPath, folderID, memberQuery)
 }
 
-// Handle download of a folder
-// 1. Log the folder name
-// 2. Create directory under the root directory
+// Handle download of a folder and its child folders/members
 func downloadFolder(ctx context.Context, basePath string, folderID string, memberQuery url.Values) {
 
+	// get folder details and establish base folder to point to this folder on disk
 	folder := sasobjs.GetFolder(ctx, folderID)
 	log.Printf("--> Folder Name: %v Id: %v Members: %v\n", folder.Name, folder.ID, folder.MemberCount)
 	currentBasePath := basePath + "/" + folder.Name + "/"
+
+	// create directory on disk for this folder
 	err := os.Mkdir(currentBasePath, 0750)
 	if err != nil {
 		log.Panicf("Error trying to create output dir %s\n", folder.Name)
@@ -93,6 +94,7 @@ func downloadFolder(ctx context.Context, basePath string, folderID string, membe
 	// Get folder members that follow the applied member filter
 	// 1. Get the member's (file's) content
 	// 2. Save it to a new file in the directory created above
+	// 3. For subfolders call this function recursively
 	members := sasobjs.GetMembers(ctx, folder.ID, memberQuery)
 	for _, member := range members.Items {
 		switch member.ContentType {
