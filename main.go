@@ -25,11 +25,11 @@ func init() {
 }
 
 func main() {
-	var hostname, clientid, clientsecret, path, code, rootOutputPath string
-	flag.StringVar(&rootOutputPath, "o", "c:/temp", "Please enter the output path")
-	flag.StringVar(&hostname, "h", "", "Please enter the hostname")
+	var baseURL, clientid, clientsecret, path, authcode, rootOutputPath string
+	flag.StringVar(&baseURL, "h", "", "Please enter the baseURL")
 	flag.StringVar(&clientid, "ci", "", "Please enter a ClientID")
 	flag.StringVar(&path, "path", "", "Please enter a folder path")
+	flag.StringVar(&rootOutputPath, "o", "c:/temp", "Please enter the output path")
 	flag.Parse()
 
 	if path == "" {
@@ -37,11 +37,11 @@ func main() {
 	}
 
 	// Open browser to get authorization code
-	browser.OpenURL(hostname + "/SASLogon/oauth/authorize?client_id=" + clientid + "&response_type=code")
+	browser.OpenURL(baseURL + "/SASLogon/oauth/authorize?client_id=" + clientid + "&response_type=code")
 
 	// Get authorization code from end-user assuming he copied it from the browser
-	fmt.Println("Enter code from browser:")
-	fmt.Scan(&code)
+	fmt.Println("Enter authorization code shown in browser:")
+	fmt.Scan(&authcode)
 
 	// Get client secret
 	fmt.Println("Enter client secret:")
@@ -53,12 +53,11 @@ func main() {
 	ai := core.AuthInfo{
 		// Username:     username,
 		// Password:     password,
-		Code:         code,
+		Code:         authcode,
 		GrantType:    "authorization_code",
 		ClientID:     clientid,
 		ClientSecret: clientsecret}
 
-	baseURL := hostname
 	token := ai.GetToken(baseURL)
 
 	// Store SAS Viya OAuth token and baseURL in a new context
