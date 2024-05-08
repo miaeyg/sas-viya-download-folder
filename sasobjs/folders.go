@@ -23,6 +23,7 @@ type FolderList struct {
 // Folder is a folder object
 type Folder struct {
 	ID                string `json:"id"`
+	URI               string `json:"uri"`
 	Name              string `json:"name"`
 	Description       string `json:"description"`
 	ParentFolderURI   string `json:"parentFolderUri"`
@@ -78,8 +79,7 @@ type Link struct {
 	ResponseItemType string `json:"responseItemType"`
 }
 
-// GetFolders extract a list of folders extra filters can be applied
-func GetFolder(ctx context.Context, query url.Values) Folder {
+func GetFolderID(ctx context.Context, query url.Values) string {
 	// use type assertion "var.(T)" to pull the value out from the context (it is "interface{}" aka "any")
 	// https://go.dev/tour/methods/15
 	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
@@ -91,6 +91,28 @@ func GetFolder(ctx context.Context, query url.Values) Folder {
 	endpoint := "/folders/folders/@item"
 	method := "GET"
 	resp := core.CallRest(baseURL, endpoint, headers, method, nil, query)
+	var result Folder
+	err := json.Unmarshal(resp, &result)
+	if err != nil {
+		fmt.Println("Error in marshaling!", err)
+	}
+	return result.ID
+}
+
+// GetFolders extract a list of folders extra filters can be applied
+func GetFolder(ctx context.Context, folderID string) Folder {
+	// use type assertion "var.(T)" to pull the value out from the context (it is "interface{}" aka "any")
+	// https://go.dev/tour/methods/15
+	bearer := "Bearer " + ctx.Value("token").(*core.Token).AccessToken
+	baseURL := ctx.Value("baseURL").(string)
+	headers := map[string][]string{
+		// "Accept":        []string{"application/vnd.sas.collection+json"},
+		"Accept":        []string{"application/vnd.sas.content.folder+json", "application/json", "application/vnd.sas.content.folder.member+json"},
+		"Authorization": []string{bearer}}
+	endpoint := "/folders/folders/" + folderID
+	fmt.Println(endpoint)
+	method := "GET"
+	resp := core.CallRest(baseURL, endpoint, headers, method, nil, nil)
 	var result Folder
 	err := json.Unmarshal(resp, &result)
 	if err != nil {

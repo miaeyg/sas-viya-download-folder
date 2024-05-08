@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/pkg/browser"
 )
@@ -71,16 +72,20 @@ func main() {
 	log.Printf("Downloading to root folder: %s\n", rootOutputPath)
 	log.Println("Searching for folders in SAS Content...")
 
-	downloadFolder(ctx, rootOutputPath, folderQuery, memberQuery)
+	// get root folder ID and call download function
+	folderID := sasobjs.GetFolderID(ctx, folderQuery)
+	downloadFolder(ctx, rootOutputPath, folderID, memberQuery)
 }
 
 // Handle download of a folder
 // 1. Log the folder name
 // 2. Create directory under the root directory
-func downloadFolder(ctx context.Context, basePath string, folderQuery url.Values, memberQuery url.Values) {
-	folder := sasobjs.GetFolder(ctx, folderQuery)
+func downloadFolder(ctx context.Context, basePath string, folderID string, memberQuery url.Values) {
+
+	folder := sasobjs.GetFolder(ctx, folderID)
 	log.Printf("--> Folder Name: %v Id: %v Members: %v\n", folder.Name, folder.ID, folder.MemberCount)
-	err := os.Mkdir(basePath+"/"+folder.Name, 0750)
+	currentBasePath := basePath + "/" + folder.Name + "/"
+	err := os.Mkdir(currentBasePath, 0750)
 	if err != nil {
 		log.Panicf("Error trying to create output dir %s\n", folder.Name)
 	}
@@ -94,7 +99,7 @@ func downloadFolder(ctx context.Context, basePath string, folderQuery url.Values
 		case "file":
 			log.Printf("--> Downloading member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
 			memberContent := sasobjs.GetFileContent(ctx, member.URI)
-			file, err := os.Create(basePath + "/" + folder.Name + "/" + member.Name)
+			file, err := os.Create(currentBasePath + member.Name)
 			if err != nil {
 				log.Printf("Error trying to create output file %s\n", member.Name)
 				continue
@@ -102,7 +107,8 @@ func downloadFolder(ctx context.Context, basePath string, folderQuery url.Values
 			io.Copy(file, bytes.NewReader(memberContent))
 			file.Close()
 		case "folder":
-			log.Printf("--> Found subfolder %s, skipping.", member.Name)
+			log.Printf("--> Found subfolder %s with id %s", member.Name, member.ID)
+			downloadFolder(ctx, currentBasePath, strings.Split(member.URI, "/")[3], memberQuery)
 		default:
 			log.Println("In type other")
 		}
