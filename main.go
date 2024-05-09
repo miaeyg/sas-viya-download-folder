@@ -12,12 +12,21 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/pkg/browser"
 )
 
+type item struct {
+	currentBasePath string
+	memberURI       string
+	memberName      string
+}
+
 // Folder child member query
 var memberQuery url.Values = url.Values{}
+var memberChannel chan *item
+var wg sync.WaitGroup
 
 // Sample query that selects only files who's names end with .sas - modify as needed
 func init() {
@@ -64,6 +73,13 @@ func main() {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "token", &token)
 	ctx = context.WithValue(ctx, "baseURL", baseURL)
+	ctx, cancelCtx := context.WithCancel(ctx)
+
+	// create channel with items that need to be downloaded
+	memberChannel = make(chan *item)
+	wg.Add(2)
+	go downloadMember(ctx, 1)
+	go downloadMember(ctx, 2)
 
 	// Folders query see https://developer.sas.com/apis/rest/#making-an-api-call for details on query syntax
 	// Search for the specific folder as passed in the input flag
@@ -74,8 +90,12 @@ func main() {
 	folderID := sasobjs.GetFolderID(ctx, folderQuery)
 
 	// download
-	log.Printf("Downloading %s to directory: %s\n", rootSourcePath, rootOutputPath)
+	log.Printf("Downloading %s to directory: %s\n\n", rootSourcePath, rootOutputPath)
 	downloadFolder(ctx, rootOutputPath, folderID)
+
+	// signal end of processing and wait for routines to terminate
+	cancelCtx()
+	wg.Wait()
 }
 
 // Handle download of a folder and its child folders/members
@@ -102,7 +122,12 @@ func downloadFolder(ctx context.Context, basePath string, folderID string) {
 	for _, member := range members.Items {
 		switch member.ContentType {
 		case "file":
-			downloadMember(ctx, currentBasePath, member.URI, member.Name)
+			newItem := &item{
+				currentBasePath,
+				member.URI,
+				member.Name,
+			}
+			memberChannel <- newItem
 		case "folder":
 			downloadFolder(ctx, currentBasePath, strings.Split(member.URI, "/")[3])
 		default:
@@ -112,13 +137,26 @@ func downloadFolder(ctx context.Context, basePath string, folderID string) {
 }
 
 // Handle download of a folder member
-func downloadMember(ctx context.Context, currentBasePath string, memberURI string, memberName string) {
-	log.Printf("--> Downloading member Name: %s Member URI: %s\n", memberName, memberURI)
-	memberContent := sasobjs.GetFileContent(ctx, memberURI)
-	file, err := os.Create(currentBasePath + memberName)
-	if err != nil {
-		log.Printf("Error trying to create output file %s\n", memberName)
+func downloadMember(ctx context.Context, id int) {
+	log.Printf("In download item worker routine %v.\n", id)
+	for {
+		select {
+		case <-ctx.Done():
+			// The context is over, stop processing items
+			log.Printf("Terminating download item worker routine %v.\n", id)
+			wg.Done()
+			return
+		case item := <-memberChannel:
+			// Process the item received
+			log.Printf("--> Downloading member Name: %s Member URI: %s in worker %v\n", item.memberName, item.memberURI, id)
+			memberContent := sasobjs.GetFileContent(ctx, item.memberURI)
+			file, err := os.Create(item.currentBasePath + item.memberName)
+			if err != nil {
+				log.Printf("Error trying to create output file %s\n", item.memberName)
+			} else {
+				io.Copy(file, bytes.NewReader(memberContent))
+			}
+			file.Close()
+		}
 	}
-	io.Copy(file, bytes.NewReader(memberContent))
-	file.Close()
 }
