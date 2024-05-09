@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/browser"
 )
 
+// item represents an item that needs to be downloaded
 type item struct {
 	currentBasePath string
 	memberURI       string
@@ -138,7 +139,7 @@ func downloadFolder(ctx context.Context, basePath string, folderID string) {
 
 // Handle download of a folder member
 func downloadMember(ctx context.Context, id int) {
-	log.Printf("In download item worker routine %v.\n", id)
+	log.Printf("Download items worker routine %v waiting for work.\n", id)
 	for {
 		select {
 		case <-ctx.Done():
