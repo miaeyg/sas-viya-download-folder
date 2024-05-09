@@ -84,6 +84,8 @@ func downloadFolder(ctx context.Context, basePath string, folderID string) {
 	// get folder details and establish base folder to point to this folder on disk
 	folder := sasobjs.GetFolder(ctx, folderID)
 	log.Printf("--> Folder Name: %v Id: %v Members: %v\n", folder.Name, folder.ID, folder.MemberCount)
+
+	// update current base path with new folder
 	currentBasePath := basePath + "/" + folder.Name + "/"
 
 	// create directory on disk for this folder
@@ -100,20 +102,23 @@ func downloadFolder(ctx context.Context, basePath string, folderID string) {
 	for _, member := range members.Items {
 		switch member.ContentType {
 		case "file":
-			log.Printf("--> Downloading member Name: %s Member URI: %s Member ID: %s\n", member.Name, member.URI, member.ID)
-			memberContent := sasobjs.GetFileContent(ctx, member.URI)
-			file, err := os.Create(currentBasePath + member.Name)
-			if err != nil {
-				log.Printf("Error trying to create output file %s\n", member.Name)
-				continue
-			}
-			io.Copy(file, bytes.NewReader(memberContent))
-			file.Close()
+			downloadMember(ctx, currentBasePath, member.URI, member.Name)
 		case "folder":
-			log.Printf("--> Found subfolder %s", member.Name)
 			downloadFolder(ctx, currentBasePath, strings.Split(member.URI, "/")[3])
 		default:
-			log.Println("In type other")
+			log.Println("In type other, ignoring.")
 		}
 	}
+}
+
+// Handle download of a folder member
+func downloadMember(ctx context.Context, currentBasePath string, memberURI string, memberName string) {
+	log.Printf("--> Downloading member Name: %s Member URI: %s\n", memberName, memberURI)
+	memberContent := sasobjs.GetFileContent(ctx, memberURI)
+	file, err := os.Create(currentBasePath + memberName)
+	if err != nil {
+		log.Printf("Error trying to create output file %s\n", memberName)
+	}
+	io.Copy(file, bytes.NewReader(memberContent))
+	file.Close()
 }
