@@ -25,31 +25,31 @@ func init() {
 }
 
 func main() {
-	var baseURL, clientid, clientsecret, path, authcode, rootOutputPath string
-	flag.StringVar(&baseURL, "h", "", "Please enter the baseURL")
-	flag.StringVar(&clientid, "ci", "", "Please enter a ClientID")
-	flag.StringVar(&path, "path", "", "Please enter a folder path")
-	flag.StringVar(&rootOutputPath, "o", "c:/temp", "Please enter the output path")
+	var baseURL, clientid, clientsecret, rootSourcePath, authcode, rootOutputPath string
+	flag.StringVar(&baseURL, "url", "", "Please enter the baseURL")
+	flag.StringVar(&clientid, "clientid", "", "Please enter a ClientID")
+	flag.StringVar(&rootSourcePath, "folder", "", "Please enter a SAS Content folder path")
+	flag.StringVar(&rootOutputPath, "dir", "c:/temp", "Please enter the output directory path")
 	flag.Parse()
 
-	if path == "" {
-		log.Fatalln("-path is a required parameter. Aborting.")
+	if rootSourcePath == "" {
+		log.Fatalln("-folder is a required parameter. Aborting.")
 	}
 
-	// Open browser to get authorization code
+	// Open browser to get a one time authorization code
 	browser.OpenURL(baseURL + "/SASLogon/oauth/authorize?client_id=" + clientid + "&response_type=code")
 
 	// Get authorization code from end-user assuming he copied it from the browser
-	fmt.Println("Enter authorization code shown in browser:")
+	fmt.Println("Enter authorization code displayed in browser:")
 	fmt.Scan(&authcode)
 
 	// Get client secret
-	fmt.Println("Enter client secret:")
+	fmt.Println("Enter client's secret:")
 	fmt.Println("\033[8m") // Hide input
 	fmt.Scan(&clientsecret)
 	fmt.Println("\033[28m") // Show input
 
-	// Get SAS OAuth token
+	// Get SAS access token using the auth code
 	ai := core.AuthInfo{
 		// Username:     username,
 		// Password:     password,
@@ -68,13 +68,13 @@ func main() {
 	// Folders query see https://developer.sas.com/apis/rest/#making-an-api-call for details on query syntax
 	// Search for the specific folder as passed in the input flag
 	folderQuery := url.Values{}
-	folderQuery.Add("path", path)
-
-	log.Printf("Downloading to root folder: %s\n", rootOutputPath)
-	log.Println("Searching for folders in SAS Content...")
+	folderQuery.Add("path", rootSourcePath)
 
 	// get root folder ID and call download function
 	folderID := sasobjs.GetFolderID(ctx, folderQuery)
+
+	// download
+	log.Printf("Downloading %s to directory: %s\n", rootSourcePath, rootOutputPath)
 	downloadFolder(ctx, rootOutputPath, folderID)
 }
 
